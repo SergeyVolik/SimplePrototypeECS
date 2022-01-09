@@ -1,0 +1,92 @@
+<#@ template hostspecific="true" language="C#/Unity" #>
+<#@ import namespace="Newtonsoft.Json" #>
+<#@ import namespace="SerV112.UtilityAIEditor" #>
+<#
+
+var settingsJson = this.Host.ResolveParameterValue("-", "-", "settings");
+
+var settings = JsonConvert.DeserializeObject<UtilityAISimulationSettings>(settingsJson);
+
+string AISimulationClassName = settings.AISimulationClassName;
+string AIAgentClassName = settings.AIAgentClassName;
+string AISimulationInspectorClassName = settings.AISimulationInspectorClassName;
+#>
+//-----------------------------------------------------------------------
+// This file is AUTO-GENERATED.
+// Changes for this script by hand might be lost when auto-generation is run.
+// (Generated date: <#=DateTime.Now.ToString("yyyy-MM-dd")#>)
+//-----------------------------------------------------------------------
+
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
+using System;
+using Unity.Collections;
+using UnityEngine.Rendering;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+public class <#= AISimulationClassName #> : AISimulationBase<<#= AISimulationClassName #>, <#= AISimulationClassName #>.AgentInData, <#= AISimulationClassName #>.AgentOutData>
+{
+    [Serializable]
+    public struct AgentInData
+    {
+       
+<#for(int i =0; i < settings.Properties.Count; i++) { #>
+        [SerializeField]
+        [Range(<#= settings.Properties[i].Range.Min #>, <#= settings.Properties[i].Range.Max #>)]
+        public float <#= settings.Properties[i].Name #>;
+<#} #>
+    }
+
+    [Serializable]
+    public struct AgentOutData
+    {
+<#for(int i =0; i < settings.Results.Count; i++) { #>
+        public <#= settings.Results[i].Type #> <#= settings.Results[i].Name #>;
+<#} #>
+        public float Age;
+    }
+
+    protected override void Awake()
+    {
+        base.Awake();
+
+        unsafe
+        {
+            m_AgentInDataSize = sizeof(AgentInData);
+            m_AgentOutDataSize = sizeof(AgentOutData);
+
+        }
+
+    }
+
+    protected override ComputeShader FindComputeShader()
+    {
+        return Resources.Load<ComputeShader>("<#= settings.ComputeShaderResourcePath #>");;
+    }
+
+}
+
+#if UNITY_EDITOR
+
+[CustomEditor(typeof(<#= AISimulationClassName #>))]
+[CanEditMultipleObjects]
+public class  <#= AISimulationClassName #>Inspector: AISimulationBaseInspector
+{
+<#for(var i = 0; i < settings.AiAgentInspector.BoxMessages.Count; i++) { #>
+    const string m_Warning<#=i#> = "<#= settings.AiAgentInspector.BoxMessages[i].Message#>";
+<#}#>
+
+	public override void OnInspectorGUI()
+    {    
+        base.OnInspectorGUI();
+<#for(var i = 0; i < settings.AiAgentInspector.BoxMessages.Count; i++) { #>
+        EditorGUILayout.HelpBox(m_Warning<#=i#>, MessageType.<#=settings.AiAgentInspector.BoxMessages[i].MessageType.ToString()#>, true);
+<#}#>
+    }
+}
+
+#endif
+
